@@ -526,4 +526,4 @@ for epoch in range(args.num_epochs + 1):
         pi1,pi2,pi1_unrel,pi2_unrel = train(epoch,dualnet.net1, dualnet.net2, optimizer1, total_trainloader,pi1,pi2,pi1_unrel,pi2_unrel) 
     test(epoch, dualnet.net1, dualnet.net2)
     torch.save(dualnet, f"./{args.dataset}_{args.noise_type}best.pth.tar")
-  print("The best:", the_best_ac, " and ", the_best_ep)
+print("The best:", the_best_ac, " and ", the_best_ep)
