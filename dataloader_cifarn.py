@@ -255,11 +255,18 @@ class cifarn_dataloader():
                                          is_human=self.is_human, root_dir=self.root_dir, transform=self.transform_train,
                                          transform_s=self.transform_train_s, mode="all",
                                          noise_file=self.noise_file, print_show=self.print_show, r=self.r,noise_mode=self.noise_mode)
+
+            all_dataset = cifarn_dataset(dataset=self.dataset, noise_type=self.noise_type, noise_path=self.noise_path,
+                                        is_human=self.is_human, root_dir=self.root_dir, transform=self.transform_train,
+                                        transform_s=self.transform_train_s, mode="all",
+                                        noise_file=self.noise_file, print_show=self.print_show, r=self.r,noise_mode=self.noise_mode)
             
             fraction = 0.01
             n_samples = int(len(all_dataset) * fraction)
-            subset_dataset = Subset(all_dataset, list(range(n_samples)))
-
+            indices = torch.randperm(len(all_dataset))[:n_samples]
+            subset_dataset = Subset(all_dataset, indices)
+            subset_labels = [all_dataset.train_noisy_labels[i] for i in indices]
+            
             trainloader = DataLoader(
                 dataset=subset_dataset,  # used to be all data_set
                 batch_size=self.batch_size,
@@ -267,7 +274,7 @@ class cifarn_dataloader():
                 num_workers=0)  # CASE CASE THIS WAS CHANGED FROM self.num_workers to 0
             self.print_show = False
             # never show noisy rate again
-            return trainloader, all_dataset.train_noisy_labels
+            return trainloader, subset_labels #all_dataset.train_noisy_labels
 
         elif mode == 'train':
             labeled_dataset = cifarn_dataset(dataset=self.dataset, noise_type=self.noise_type,
