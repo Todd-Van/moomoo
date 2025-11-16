@@ -77,6 +77,8 @@ def linear_rampup2(current, rampup_length):
         return current / rampup_length
 
 def adjust_learning_rate(args, optimizer, epoch):
+    if not hasattr(args, "lr_decay_epochs"):
+        args.lr_decay_epochs = [150, 180]
     lr = args.lr
     if args.cosine:
         eta_min = lr * (args.lr_decay_rate ** 3)
