@@ -16,6 +16,9 @@ from utils.fmix import *
 from sklearn.mixture import GaussianMixture
 from datetime import datetime
 
+the_best_ac = 0
+the_best_ep = 0
+
 parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
 parser.add_argument('--batch_size', default=256, type=int, help='train batchsize')
 parser.add_argument('--lr', '--learning_rate', default=0.05, type=float, help='initial learning rate')
@@ -411,6 +414,11 @@ def test(epoch, net1, net2):
     acc = 100. * correct / total
     acc2 = 100. * correct2 / total
     accmean_ori = 100. * correctmean_ori / total
+
+    if (epoch > the_best_ep):
+      the_best_ep = epoch
+      the_best_ac = accmean_ori
+      
     print("| Test Epoch #%d\t Acc Net1: %.2f%%, Acc Net2: %.2f%% Acc Mean: %.2f%%\n" % (epoch, acc, acc2,  accmean_ori))
     test_log.write('Epoch:%d   Accuracy:%.2f\n' % (epoch, acc))
     test_log.flush()
@@ -518,3 +526,4 @@ for epoch in range(args.num_epochs + 1):
         pi1,pi2,pi1_unrel,pi2_unrel = train(epoch,dualnet.net1, dualnet.net2, optimizer1, total_trainloader,pi1,pi2,pi1_unrel,pi2_unrel) 
     test(epoch, dualnet.net1, dualnet.net2)
     torch.save(dualnet, f"./{args.dataset}_{args.noise_type}best.pth.tar")
+  print("The best:", the_best_ac, " and ", the_best_ep)
