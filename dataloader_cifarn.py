@@ -261,7 +261,7 @@ class cifarn_dataloader():
                                         transform_s=self.transform_train_s, mode="all",
                                         noise_file=self.noise_file, print_show=self.print_show, r=self.r,noise_mode=self.noise_mode)
             
-            fraction = 0.01
+            fraction = 0.10  # CHANGE THE SIZE
             n_samples = int(len(all_dataset) * fraction)
             indices = torch.randperm(len(all_dataset))[:n_samples]
             subset_dataset = Subset(all_dataset, indices)
