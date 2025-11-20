@@ -488,6 +488,41 @@ optimizer1 = optim.SGD([{'params': dualnet.net1.parameters()},
                         {'params': dualnet.net2.parameters()}
                         ], lr=args.lr, momentum=0.9, weight_decay=5e-4)
 
+
+#THIS IS WHERE IM CHANGING THINGS
+
+checkpoint_path = './checkpoint.pth'
+start_epoch = 0
+
+if os.path.exists(checkpoint_path):
+    print(f"Found checkpoint '{checkpoint_path}', resuming ...")
+    ckpt = torch.load(checkpoint_path, map_location='cuda' if torch.cuda.is_available() else 'cpu')
+    if 'dualnet_state' in ckpt:
+        dualnet.load_state_dict(ckpt['dualnet_state'])
+    elif 'state_dict' in ckpt:
+        dualnet.load_state_dict(ckpt['state_dict'])
+    else:
+        try:
+            dualnet = ckpt['model'] if 'model' in ckpt else torch.load(checkpoint_path)
+            print("Loaded full model object from checkpoint.")
+        except Exception:
+            print("Could not load a model state from checkpoint; starting from scratch.")
+    if 'optimizer_state' in ckpt:
+        optimizer1.load_state_dict(ckpt['optimizer_state'])
+
+    if 'pi1' in ckpt:
+        pi1 = ckpt.get('pi1', pi1)
+        pi2 = ckpt.get('pi2', pi2)
+        pi1_unrel = ckpt.get('pi1_unrel', pi1_unrel)
+        pi2_unrel = ckpt.get('pi2_unrel', pi2_unrel)
+
+    start_epoch = ckpt.get('epoch', 0) + 1
+    print(f"Resuming from epoch {start_epoch}")
+else:
+    print("No checkpoint found. Training from scratch.")
+
+#THIS IS END OF CHANGING THINGS
+
 fmix = FMix()
 CE = nn.CrossEntropyLoss(reduction='none')
 CEloss = nn.CrossEntropyLoss()
@@ -504,7 +539,7 @@ pi2 = bias_initial(args.num_class)
 pi1_unrel = bias_initial(args.num_class)
 pi2_unrel = bias_initial(args.num_class)
 
-for epoch in range(args.num_epochs + 1):
+for epoch in range(start_epoch, args.num_epochs + 1):   #for epoch in range(args.num_epochs + 1):
     adjust_learning_rate(args, optimizer1, epoch)
     if epoch < warm_up:
         warmup_trainloader, noisy_labels = loader.run('warmup')
@@ -518,5 +553,27 @@ for epoch in range(args.num_epochs + 1):
         total_trainloader, noisy_labels = loader.run('train', pred1, prob1, prob2)  # co-divide
         pi1,pi2,pi1_unrel,pi2_unrel = train(epoch,dualnet.net1, dualnet.net2, optimizer1, total_trainloader,pi1,pi2,pi1_unrel,pi2_unrel) 
     test(epoch, dualnet.net1, dualnet.net2)
-    torch.save(dualnet, f"./{args.dataset}_{args.noise_type}best.pth.tar")
+    #torch.save(dualnet, f"./{args.dataset}_{args.noise_type}best.pth.tar")
+    save_every = 5
+    if (epoch % save_every == 0) or (epoch == args.num_epochs):
+        ckpt = {
+            'epoch': epoch,
+            'dualnet_state': dualnet.state_dict(),
+            'optimizer_state': optimizer1.state_dict(),
+            'pi1': pi1,
+            'pi2': pi2,
+            'pi1_unrel': pi1_unrel,
+            'pi2_unrel': pi2_unrel,
+        }
+        torch.save(ckpt, checkpoint_path)
+        print(f"Checkpoint saved to {checkpoint_path} (epoch {epoch})")
+
+    # Save "best" model by test accuracy (optional)
+    # evaluate() already writes acc to test_log; you can also save best here:
+    try:
+        # if evaluate/test returned acc we could compare; otherwise keep existing best_acc var
+        # Here we assume test() printed and test_log contains last accuracy line; simpler: keep best_acc via evaluate wrapper
+        pass
+    except Exception:
+        pass
 
