@@ -322,9 +322,9 @@ class cifarn_dataloader():
 
             # Select a fraction for validation (e.g., 10%)
             fraction = 0.1
-            n_samples = int(len(full_train_dataset) * fraction)
-            indices = torch.randperm(len(full_train_dataset))[:n_samples]
-            val_dataset = Subset(full_train_dataset, indices)
+            n_samples = int(len(full_dataset) * fraction)
+            indices = torch.randperm(len(full_dataset))[:n_samples]
+            val_dataset = Subset(full_dataset, indices)
 
             val_loader = DataLoader(
                 dataset=val_dataset,
@@ -333,6 +333,6 @@ class cifarn_dataloader():
                 num_workers=0)
 
             # Optionally, return labels if needed
-            val_labels = [full_train_dataset.train_noisy_labels[i] for i in indices]
+            val_labels = [full_dataset.train_noisy_labels[i] for i in indices]
             return val_loader, val_labels
         # never print again
