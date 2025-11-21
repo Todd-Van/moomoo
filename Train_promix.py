@@ -530,6 +530,9 @@ CEsoft = CE_Soft_Label()
 eval_loader, noise_or_not = loader.run('eval_train')
 test_loader = loader.run('test')
 
+#validation
+val_loader = test_loader
+
 all_loss = [[], []]  
 
 best_acc = 0
@@ -538,6 +541,9 @@ pi1 = bias_initial(args.num_class)
 pi2 = bias_initial(args.num_class)
 pi1_unrel = bias_initial(args.num_class)
 pi2_unrel = bias_initial(args.num_class)
+
+#for validation
+best_val_acc = 0
 
 for epoch in range(start_epoch, args.num_epochs + 1):   #for epoch in range(args.num_epochs + 1):
     adjust_learning_rate(args, optimizer1, epoch)
@@ -554,6 +560,29 @@ for epoch in range(start_epoch, args.num_epochs + 1):   #for epoch in range(args
         pi1,pi2,pi1_unrel,pi2_unrel = train(epoch,dualnet.net1, dualnet.net2, optimizer1, total_trainloader,pi1,pi2,pi1_unrel,pi2_unrel) 
     test(epoch, dualnet.net1, dualnet.net2)
     #torch.save(dualnet, f"./{args.dataset}_{args.noise_type}best.pth.tar")
+
+    dualnet.net1.eval()
+    correct, total = 0, 0
+    with torch.no_grad():
+        for images, labels, _ in loader.run('val'):  
+            images, labels = images.cuda(), labels.cuda()
+            outputs = dualnet.net1(images)
+            _, predicted = torch.max(outputs, 1)
+            correct += (predicted == labels).sum().item()
+            total += labels.size(0)
+
+    val_acc = 100.0 * correct / total
+    print(f"Validation Accuracy Epoch {epoch}: {val_acc:.2f}%")
+
+    # -----------------------------
+    # SAVE BEST MODEL (NEW)
+    # -----------------------------
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        torch.save(dualnet.state_dict(), f"./best_model_val.pth")
+        print(f"New BEST model saved at epoch {epoch} with val acc {val_acc:.2f}%")
+
+  
     save_every = 5
     if (epoch % save_every == 0) or (epoch == args.num_epochs):
         ckpt = {
