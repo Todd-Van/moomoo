@@ -314,4 +314,25 @@ class cifarn_dataloader():
                 shuffle=False,
                 num_workers=0) # CASE CASE THIS WAS CHANGED
             return eval_loader, eval_dataset.noise_or_not
+        elif mode == 'val':
+            full_dataset = cifarn_dataset(dataset=self.dataset, noise_type=self.noise_type, noise_path=self.noise_path,
+                                          is_human=self.is_human, 
+                                          root_dir=self.root_dir, transform=self.transform_test, mode='all', 
+                                          noise_file=self.noise_file, r=self.r, noise_mode=self.noise_mode)
+
+            # Select a fraction for validation (e.g., 10%)
+            fraction = 0.1
+            n_samples = int(len(full_train_dataset) * fraction)
+            indices = torch.randperm(len(full_train_dataset))[:n_samples]
+            val_dataset = Subset(full_train_dataset, indices)
+
+            val_loader = DataLoader(
+                dataset=val_dataset,
+                batch_size=self.batch_size,
+                shuffle=False,
+                num_workers=0)
+
+            # Optionally, return labels if needed
+            val_labels = [full_train_dataset.train_noisy_labels[i] for i in indices]
+            return val_loader, val_labels
         # never print again
