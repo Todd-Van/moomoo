@@ -106,6 +106,21 @@ def label_guessing(idx_chosen, w_x, batch_size, score1, score2, match):
         w_x2[high_conf_cond2] = 1
     return w_x2
 
+
+def validate(model, val_loader):
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in val_loader:
+            images, labels = images.cuda(), labels.cuda()
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    acc = 100 * correct / total
+    return acc
+
 # Training
 def train(epoch, net, net2, optimizer, labeled_trainloader, pi1, pi2, pi1_unrel, pi2_unrel):
     net.train()
@@ -531,7 +546,7 @@ eval_loader, noise_or_not = loader.run('eval_train')
 test_loader = loader.run('test')
 
 #validation
-val_loader = test_loader
+val_loader, val_labels = loader.run('val')
 
 all_loss = [[], []]  
 
@@ -561,17 +576,7 @@ for epoch in range(start_epoch, args.num_epochs + 1):   #for epoch in range(args
     test(epoch, dualnet.net1, dualnet.net2)
     #torch.save(dualnet, f"./{args.dataset}_{args.noise_type}best.pth.tar")
 
-    dualnet.net1.eval()
-    correct, total = 0, 0
-    with torch.no_grad():
-        for images, labels, _ in loader.run('val'):  
-            images, labels = images.cuda(), labels.cuda()
-            outputs = dualnet.net1(images)
-            _, predicted = torch.max(outputs, 1)
-            correct += (predicted == labels).sum().item()
-            total += labels.size(0)
-
-    val_acc = 100.0 * correct / total
+    val_acc = validate(dualnet.net1, val_loader)
     print(f"Validation Accuracy Epoch {epoch}: {val_acc:.2f}%")
 
     # -----------------------------
