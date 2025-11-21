@@ -112,10 +112,11 @@ def validate(model, val_loader):
     correct = 0
     total = 0
     with torch.no_grad():
-        for images, labels in val_loader:
+        for batch in val_loader:
+            images, labels = batch[:2]  # just take first two elements
             images, labels = images.cuda(), labels.cuda()
             outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
+            _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
     acc = 100 * correct / total
