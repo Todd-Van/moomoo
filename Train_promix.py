@@ -507,6 +507,11 @@ optimizer1 = optim.SGD([{'params': dualnet.net1.parameters()},
 
 #THIS IS WHERE IM CHANGING THINGS
 
+pi1 = None
+pi2 = None
+pi1_unrel = None
+pi2_unrel = None
+
 checkpoint_folder = "/content/drive/MyDrive/moomoo_checkpoints"
 checkpoint_path = os.path.join(checkpoint_folder, "checkpoint.pth")
 
